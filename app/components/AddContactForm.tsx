@@ -1,16 +1,17 @@
+'use client';
 import { useState } from 'react';
+import { useContactStore } from '../store/useContactStore';
 
-interface AddContactFormProps {
-  onAddContact: () => void;
-}
-
-export default function AddContactForm({ onAddContact }: AddContactFormProps) {
+export default function AddContactForm() {
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
     email: '',
     phone: '',
   });
+  const [status, setStatus] = useState<{ success: boolean; message: string } | null>(null);
+
+  const addContact = useContactStore((state) => state.addContact);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -18,32 +19,28 @@ export default function AddContactForm({ onAddContact }: AddContactFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const response = await fetch('https://genesii-api.onrender.com/contacts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de l’ajout du contact');
-      }
+    const response = await addContact(formData);
+    setStatus(response);
 
-      setFormData({ first_name: '', last_name: '', email: '', phone: '' }); // reset le form
-
-      onAddContact(); // 💥 Refresh la liste depuis le parent !
-    } catch (error) {
-      console.error(error);
+    if (response.success) {
+      setFormData({ first_name: '', last_name: '', email: '', phone: '' });
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
-      <input type="text" name="first_name" placeholder="Prénom" value={formData.first_name} onChange={handleChange} />
-      <input type="text" name="last_name" placeholder="Nom" value={formData.last_name} onChange={handleChange} />
-      <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} />
-      <input type="text" name="phone" placeholder="Téléphone" value={formData.phone} onChange={handleChange} />
-      <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">Ajouter</button>
+      <input name="first_name" value={formData.first_name} onChange={handleChange} placeholder="Prénom" className="border p-2 w-full" />
+      <input name="last_name" value={formData.last_name} onChange={handleChange} placeholder="Nom" className="border p-2 w-full" />
+      <input name="email" value={formData.email} onChange={handleChange} placeholder="Email" className="border p-2 w-full" />
+      <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Téléphone" className="border p-2 w-full" />
+      <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Ajouter</button>
+
+      {status && (
+        <p className={`text-sm ${status.success ? 'text-green-600' : 'text-red-600'}`}>
+          {status.message}
+        </p>
+      )}
     </form>
   );
 }

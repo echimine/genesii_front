@@ -1,56 +1,59 @@
 'use client';
-
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useContactStore } from './store/useContactStore';
 import AddContactForm from './components/AddContactForm';
-
-// 🧠 Interface TypeScript pour typer les données reçues de l’API
-interface Contact {
-  id_contact: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-}
+import { ChevronDown, ChevronUp } from 'lucide-react'; // ou une flèche unicode si tu veux
 
 export default function Home() {
-  const [data, setData] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  const fetchData = async () => {
-    try {
-      const response = await fetch('https://genesii-api.onrender.com/contacts');
-      if (!response.ok) throw new Error(`Erreur HTTP : ${response.status}`);
-      const result: Contact[] = await response.json();
-      setData(result);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des données', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { contacts, fetchContacts, loading } = useContactStore();
+  const [showAll, setShowAll] = useState(false); // <-- état pour voir + ou non
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchContacts();
+  }, [fetchContacts]);
+
+  // on découpe les contacts selon showAll
+  const visibleContacts = showAll ? contacts : contacts.slice(0, 6);
 
   return (
     <main className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">Liste des contacts</h1>
+
       {loading ? (
         <p>Chargement...</p>
-      ) : data.length > 0 ? (
-        data.map((contact) => (
-          <div key={contact.id_contact} className="p-4 border rounded-lg shadow">
-            <p><strong>Nom :</strong> {contact.first_name} {contact.last_name}</p>
-            <p><strong>Email :</strong> {contact.email}</p>
-            <p><strong>Téléphone :</strong> {contact.phone}</p>
-          </div>
-        ))
-      ) : (
+      ) : contacts.length === 0 ? (
         <p>Aucun contact trouvé.</p>
+      ) : (
+        <>
+          {visibleContacts.map((contact, index) => (
+            <div key={contact.id_contact} className="p-4 border-2 rounded-lg shadow">
+              <p><strong>{index + 1}.</strong> {contact.first_name} {contact.last_name}</p>
+              <p><strong>Email :</strong> {contact.email}</p>
+              <p><strong>Téléphone :</strong> {contact.phone}</p>
+            </div>
+          ))}
+
+          {/* flèche pour "voir plus" ou "voir moins" */}
+          {contacts.length > 6 && (
+            <button
+              onClick={() => setShowAll(!showAll)}
+              className="flex items-center gap-2 text-blue-600 hover:underline"
+            >
+              {showAll ? (
+                <>
+                  Voir moins <ChevronUp size={20} />
+                </>
+              ) : (
+                <>
+                  Voir plus <ChevronDown size={20} />
+                </>
+              )}
+            </button>
+          )}
+        </>
       )}
 
-      <AddContactForm onAddContact={fetchData} />
+      <AddContactForm />
     </main>
   );
 }
