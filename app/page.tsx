@@ -13,7 +13,7 @@ export default function Home() {
   }, [fetchContacts]);
 
   // on découpe les contacts selon showAll
-  const visibleContacts = showAll ? contacts : contacts.slice(0, 6);
+  const visibleContacts = showAll ? contacts : contacts.slice(0, 3);
 
   return (
     <main className="p-4 space-y-4">
